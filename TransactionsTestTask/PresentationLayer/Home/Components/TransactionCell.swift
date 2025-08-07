@@ -15,22 +15,31 @@ class TransactionCell: UITableViewCell {
     // MARK: - UI Elements
     private let amountLabel: UILabel = {
         let label = UILabel()
-        label.font = .systemFont(ofSize: 17, weight: .semibold)
+        label.font = .preferredFont(forTextStyle: .headline)
+        label.numberOfLines = 0
+        label.lineBreakMode = .byCharWrapping
+        label.adjustsFontForContentSizeCategory = true
         return label
     }()
     
     private let categoryLabel: UILabel = {
         let label = UILabel()
-        label.font = .systemFont(ofSize: 14)
+        label.font = .preferredFont(forTextStyle: .subheadline)
         label.textColor = .secondaryLabel
+        label.numberOfLines = 0
+        label.lineBreakMode = .byCharWrapping
+        label.adjustsFontForContentSizeCategory = true
         return label
     }()
     
     private let timeLabel: UILabel = {
         let label = UILabel()
-        label.font = .systemFont(ofSize: 14)
+        label.font = .preferredFont(forTextStyle: .subheadline)
         label.textColor = .tertiaryLabel
         label.textAlignment = .right
+        label.numberOfLines = 0
+        label.lineBreakMode = .byWordWrapping
+        label.adjustsFontForContentSizeCategory = true
         return label
     }()
     
@@ -66,14 +75,14 @@ class TransactionCell: UITableViewCell {
     // MARK: - Configuration
     public func configure(with transaction: TransactionModel) {
         let amount = transaction.amount.formatted()
+        amountLabel.text = "\(amount) BTC"
+        
         switch transaction.type {
         case .income:
-            amountLabel.text = "+\(amount) BTC"
             amountLabel.textColor = .systemGreen
             categoryLabel.text = "Deposit"
         case .expense(let category):
-            amountLabel.text = "-\(amount) BTC"
-            amountLabel.textColor = .label
+            amountLabel.textColor = .systemRed
             categoryLabel.text = category.displayName
         }
         

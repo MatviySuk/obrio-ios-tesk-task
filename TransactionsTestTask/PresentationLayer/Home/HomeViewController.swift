@@ -22,20 +22,27 @@ class HomeViewController: UIViewController {
 
     private let balanceTitleLabel: UILabel = {
         let label = UILabel()
-        label.font = .systemFont(ofSize: 18, weight: .medium)
+        label.font = .preferredFont(forTextStyle: .headline)
         label.textColor = .secondaryLabel
         label.text = "Current Balance"
+        label.adjustsFontForContentSizeCategory = true
         return label
     }()
     
     private let balanceLabel: UILabel = {
         let label = UILabel()
         label.translatesAutoresizingMaskIntoConstraints = false
-        label.font = .systemFont(ofSize: 34, weight: .bold)
+        label.font = .preferredFont(forTextStyle: .title2)
         label.numberOfLines = 0
         label.lineBreakMode = .byWordWrapping
         label.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        label
+            .setContentCompressionResistancePriority(
+                .defaultHigh,
+                for: .horizontal
+            )
         label.textColor = .label
+        label.adjustsFontForContentSizeCategory = true
         return label
     }()
     
@@ -52,9 +59,12 @@ class HomeViewController: UIViewController {
     
     private let btcRateLabel: UILabel = {
         let label = UILabel()
-        label.font = .systemFont(ofSize: 15, weight: .regular)
+        label.font = .preferredFont(forTextStyle: .subheadline)
         label.textColor = .tertiaryLabel
-        label.textAlignment = .left
+        label.lineBreakMode = .byWordWrapping
+        label.numberOfLines = 0
+        label.textAlignment = .right
+        label.adjustsFontForContentSizeCategory = true
         return label
     }()
     
@@ -65,8 +75,11 @@ class HomeViewController: UIViewController {
         config.imagePadding = 8
         config.baseBackgroundColor = .systemBlue
         config.cornerStyle = .medium
+        
         let button = UIButton(configuration: config)
         button.translatesAutoresizingMaskIntoConstraints = false
+        button.titleLabel?.numberOfLines = 0
+        button.titleLabel?.lineBreakMode = .byWordWrapping
         return button
     }()
 
@@ -104,23 +117,27 @@ class HomeViewController: UIViewController {
         
         transactionsTableView.dataSource = self
         transactionsTableView.delegate = self
-        
+    }
+    
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
         viewModel.onAppear()
     }
     
     // MARK: - Setup
     private func setupUI() {
-        let balanceStackView = UIStackView(arrangedSubviews: [balanceLabel, addFundsButton])
-        balanceStackView.axis = .horizontal
-        balanceStackView.spacing = 12
-        balanceStackView.alignment = .center
+        let balanceValueStack = UIStackView(arrangedSubviews: [balanceLabel, addFundsButton])
+        balanceValueStack.axis = .horizontal
+        balanceValueStack.spacing = 12
+        balanceValueStack.alignment = .center
 
-        let headerContentStackView = UIStackView(arrangedSubviews: [balanceTitleLabel, balanceStackView, btcRateLabel])
+        let headerContentStackView = UIStackView(arrangedSubviews: [btcRateLabel, balanceTitleLabel, balanceValueStack])
         headerContentStackView.translatesAutoresizingMaskIntoConstraints = false
         headerContentStackView.axis = .vertical
-        headerContentStackView.alignment = .leading
         headerContentStackView.spacing = 4
-        headerContentStackView.setCustomSpacing(12, after: balanceStackView)
+        headerContentStackView.setCustomSpacing(12, after: balanceTitleLabel)
+        
+        headerContentStackView.alignment = .fill
         
         view.addSubview(headerView)
         headerView.addSubview(headerContentStackView)
@@ -140,7 +157,6 @@ class HomeViewController: UIViewController {
             addTransactionButton.topAnchor.constraint(equalTo: headerView.bottomAnchor, constant: 24),
             addTransactionButton.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
             addTransactionButton.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
-            addTransactionButton.heightAnchor.constraint(equalToConstant: 50),
             
             transactionsTableView.topAnchor.constraint(equalTo: addTransactionButton.bottomAnchor, constant: 8),
             transactionsTableView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
@@ -197,7 +213,9 @@ class HomeViewController: UIViewController {
     }
     
     @objc private func didTapAddTransaction() {
-        print("Navigate to Add Transaction Screen")
+        let addTransactionVM = viewModel.addTransactionViewModel()
+        let addTransactionVC = AddTransactionViewController(viewModel: addTransactionVM)
+        navigationController?.pushViewController(addTransactionVC, animated: true)
     }
     
     private func showErrorAlert(_ error: Error) {

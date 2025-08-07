@@ -43,6 +43,10 @@ class HomeViewModel {
         loadTransactions()
     }
     
+    func addTransactionViewModel() -> AddTransactionViewModel {
+        AddTransactionViewModel(transactionService: transactionService)
+    }
+    
     func addFunds(amount: Decimal) {
         transactionService.saveTransaction(input: .income(amount: amount))
             .receive(on: DispatchQueue.main)
@@ -93,7 +97,7 @@ class HomeViewModel {
         with balance: Decimal,
         and transactions: [TransactionModel]
     ) {
-        self.balanceText = "Balance: \(balance.formatted()) BTC"
+        self.balanceText = "\(balance.formatted()) BTC"
         
         let grouped = Dictionary(grouping: transactions) { transaction -> Date in
             return Calendar.current.startOfDay(for: transaction.timestamp)
