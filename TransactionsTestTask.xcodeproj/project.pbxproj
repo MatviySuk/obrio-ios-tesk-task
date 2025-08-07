@@ -28,6 +28,7 @@
 		54699D122E44A3BF0090A421 /* AddFundsPopupViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 54699D112E44A3BF0090A421 /* AddFundsPopupViewController.swift */; };
 		54699D152E44B0B60090A421 /* AddTransactionViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 54699D142E44B0B60090A421 /* AddTransactionViewModel.swift */; };
 		54699D172E44B0C30090A421 /* AddTransactionViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 54699D162E44B0C30090A421 /* AddTransactionViewController.swift */; };
+		54FB37632E44F90500D08C1B /* MockDataGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 54FB37622E44F90500D08C1B /* MockDataGenerator.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -73,6 +74,7 @@
 		54699D112E44A3BF0090A421 /* AddFundsPopupViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddFundsPopupViewController.swift; sourceTree = "<group>"; };
 		54699D142E44B0B60090A421 /* AddTransactionViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddTransactionViewModel.swift; sourceTree = "<group>"; };
 		54699D162E44B0C30090A421 /* AddTransactionViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddTransactionViewController.swift; sourceTree = "<group>"; };
+		54FB37622E44F90500D08C1B /* MockDataGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockDataGenerator.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -155,6 +157,7 @@
 				54699CF92E4356870090A421 /* DataLayer */,
 				54699CFC2E43572D0090A421 /* BusinessLayer */,
 				54699CFD2E4357410090A421 /* PresentationLayer */,
+				54FB37602E44F7FE00D08C1B /* Utils */,
 			);
 			path = TransactionsTestTask;
 			sourceTree = "<group>";
@@ -273,6 +276,14 @@
 				54699D142E44B0B60090A421 /* AddTransactionViewModel.swift */,
 			);
 			path = AddTransaction;
+			sourceTree = "<group>";
+		};
+		54FB37602E44F7FE00D08C1B /* Utils */ = {
+			isa = PBXGroup;
+			children = (
+				54FB37622E44F90500D08C1B /* MockDataGenerator.swift */,
+			);
+			path = Utils;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -409,6 +420,7 @@
 				0D1540612D22EF5D00D6D63F /* AnalyticsEvent.swift in Sources */,
 				0DF1D1432D22DCD8001626E7 /* PerformOnce.swift in Sources */,
 				0DF1D1452D22DD06001626E7 /* BitcoinRateService.swift in Sources */,
+				54FB37632E44F90500D08C1B /* MockDataGenerator.swift in Sources */,
 				54699D012E4359E00090A421 /* HomeViewModel.swift in Sources */,
 				0DF1D1472D22DD4A001626E7 /* AnalyticsService.swift in Sources */,
 				1CA3B65A2D22B0F500176711 /* HomeViewController.swift in Sources */,
@@ -594,6 +606,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 4LMDFB95MF;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = TransactionsTestTask/Application/Support/Info.plist;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -605,7 +618,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.obrio.TransactionsTestTask;
+				PRODUCT_BUNDLE_IDENTIFIER = com.matvii.suk.obrio.TransactionsTestTask;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
@@ -620,6 +633,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 4LMDFB95MF;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = TransactionsTestTask/Application/Support/Info.plist;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -631,7 +645,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.obrio.TransactionsTestTask;
+				PRODUCT_BUNDLE_IDENTIFIER = com.matvii.suk.obrio.TransactionsTestTask;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;

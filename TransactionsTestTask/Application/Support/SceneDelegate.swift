@@ -17,6 +17,11 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     ) {
         let servicesAssembler = ServicesAssembler()
         
+#if DEBUG
+        // MARK: Added only for presentation. Do not include in release!
+        MockDataGenerator.run(using: servicesAssembler.coreDataService.transactionService)
+#endif
+        
         guard let windowScene = (scene as? UIWindowScene) else {
             return
         }

@@ -50,6 +50,7 @@ class TransactionCell: UITableViewCell {
         let verticalStackView = UIStackView(arrangedSubviews: [amountLabel, categoryLabel])
         verticalStackView.axis = .vertical
         verticalStackView.spacing = 4
+        verticalStackView.distribution = .fill
         
         contentView.addSubview(verticalStackView)
         contentView.addSubview(timeLabel)
@@ -60,8 +61,9 @@ class TransactionCell: UITableViewCell {
         NSLayoutConstraint.activate([
             verticalStackView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
             verticalStackView.trailingAnchor.constraint(lessThanOrEqualTo: timeLabel.leadingAnchor, constant: -8),
-            verticalStackView.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 12),
-            verticalStackView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -12),
+            verticalStackView.centerYAnchor.constraint(equalTo: contentView.centerYAnchor),
+            verticalStackView.topAnchor.constraint(greaterThanOrEqualTo: contentView.topAnchor, constant: 12),
+            verticalStackView.bottomAnchor.constraint(lessThanOrEqualTo: contentView.bottomAnchor, constant: -12),
             
             timeLabel.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
             timeLabel.centerYAnchor.constraint(equalTo: contentView.centerYAnchor)

@@ -17,11 +17,17 @@ class HomeViewModel {
     @Published private(set) var groupedTransactions: [Date: [TransactionModel]] = [:]
     @Published private(set) var sortedSectionDates: [Date] = []
     @Published private(set) var error: Error?
+    @Published private(set) var isLoading: Bool = false
     
     // MARK: - Dependencies
     private let transactionService: TransactionServiceProtocol
     private let bitcoinRateService: BitcoinRateService
     private var cancellables = Set<AnyCancellable>()
+    
+    // MARK: - Pagination Properties
+    private var currentPage = 0
+    private var canLoadMore = true
+    private var allTransactions: [TransactionModel] = []
     
     // MARK: - Private Properties
     private let rateDateFormatter: DateFormatter = {
@@ -40,7 +46,17 @@ class HomeViewModel {
     
     // MARK: - Public API
     func onAppear() {
-        loadTransactions()
+        currentPage = 0
+        canLoadMore = true
+        allTransactions = []
+        loadTransactions(page: currentPage)
+        loadBalance()
+    }
+    
+    func loadMoreTransactions() {
+        guard canLoadMore, !isLoading else { return }
+        currentPage += 1
+        loadTransactions(page: currentPage)
     }
     
     func addTransactionViewModel() -> AddTransactionViewModel {
@@ -55,7 +71,7 @@ class HomeViewModel {
                     self?.error = error
                 }
             }, receiveValue: { [weak self] _ in
-                self?.loadTransactions()
+                self?.onAppear()
             })
             .store(in: &cancellables)
     }
@@ -75,35 +91,49 @@ class HomeViewModel {
             })
             .store(in: &cancellables)
     }
-    
-    private func loadTransactions() {
-        transactionService.fetchTransactions()
+
+    private func loadBalance() {
+        transactionService.fetchTotalBalance()
             .receive(on: DispatchQueue.main)
             .sink(receiveCompletion: { [weak self] completion in
                 if case .failure(let error) = completion {
                     self?.error = error
                 }
-            }, receiveValue: { [weak self] transactions in
-                let balance = transactions.reduce(Decimal.zero) {
-                    $0 + $1.amount
-                }
-
-                self?.updateUI(with: balance, and: transactions)
+            }, receiveValue: { [weak self] balance in
+                self?.balanceText = "\(balance.formatted()) BTC"
             })
             .store(in: &cancellables)
     }
     
-    private func updateUI(
-        with balance: Decimal,
-        and transactions: [TransactionModel]
-    ) {
-        self.balanceText = "\(balance.formatted()) BTC"
-        
-        let grouped = Dictionary(grouping: transactions) { transaction -> Date in
-            return Calendar.current.startOfDay(for: transaction.timestamp)
-        }
-        
-        self.groupedTransactions = grouped
-        self.sortedSectionDates = grouped.keys.sorted(by: >)
+    private func loadTransactions(page: Int) {
+        isLoading = true
+        transactionService.fetchTransactions(page: page)
+            .map { [weak self] newTransactions -> ([Date: [TransactionModel]], [Date]) in
+                guard let self = self else { return ([:], []) }
+                
+                if newTransactions.count < 20 {
+                    self.canLoadMore = false
+                }
+                
+                self.allTransactions.append(contentsOf: newTransactions)
+                
+                let grouped = Dictionary(grouping: self.allTransactions) {
+                    Calendar.current.startOfDay(for: $0.timestamp)
+                }
+                let sorted = grouped.keys.sorted(by: >)
+                
+                return (grouped, sorted)
+            }
+            .receive(on: DispatchQueue.main)
+            .sink(receiveCompletion: { [weak self] completion in
+                self?.isLoading = false
+                if case .failure(let error) = completion {
+                    self?.error = error
+                }
+            }, receiveValue: { [weak self] (grouped, sorted) in
+                self?.groupedTransactions = grouped
+                self?.sortedSectionDates = sorted
+            })
+            .store(in: &cancellables)
     }
 }

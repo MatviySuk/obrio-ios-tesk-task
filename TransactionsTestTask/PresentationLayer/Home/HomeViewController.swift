@@ -91,6 +91,12 @@ class HomeViewController: UIViewController {
         return tableView
     }()
     
+    private let loadingIndicator: UIActivityIndicatorView = {
+        let indicator = UIActivityIndicatorView(style: .large)
+        indicator.hidesWhenStopped = true
+        return indicator
+    }()
+    
     // MARK: - Properties
     private let viewModel: HomeViewModel
     private var cancellables = Set<AnyCancellable>()
@@ -144,6 +150,11 @@ class HomeViewController: UIViewController {
         view.addSubview(addTransactionButton)
         view.addSubview(transactionsTableView)
         
+        let footerView = UIView(frame: CGRect(x: 0, y: 0, width: view.frame.size.width, height: 50))
+        footerView.addSubview(loadingIndicator)
+        loadingIndicator.center = footerView.center
+        transactionsTableView.tableFooterView = footerView
+        
         NSLayoutConstraint.activate([
             headerView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 16),
             headerView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
@@ -193,6 +204,17 @@ class HomeViewController: UIViewController {
             .receive(on: RunLoop.main)
             .sink { [weak self] error in
                 self?.showErrorAlert(error)
+            }
+            .store(in: &cancellables)
+            
+        viewModel.$isLoading
+            .receive(on: RunLoop.main)
+            .sink { [weak self] isLoading in
+                if isLoading {
+                    self?.loadingIndicator.startAnimating()
+                } else {
+                    self?.loadingIndicator.stopAnimating()
+                }
             }
             .store(in: &cancellables)
     }
@@ -254,5 +276,16 @@ extension HomeViewController: UITableViewDataSource, UITableViewDelegate {
             cell.configure(with: transaction)
         }
         return cell
+    }
+    
+    func tableView(_ tableView: UITableView, willDisplay cell: UITableViewCell, forRowAt indexPath: IndexPath) {
+        let lastSectionIndex = tableView.numberOfSections - 1
+        let lastSectionRowsCount = tableView.numberOfRows(inSection: lastSectionIndex)
+        
+        if indexPath.section == lastSectionIndex && indexPath.row == (
+            lastSectionRowsCount > 5 ? lastSectionRowsCount - 5 : 0
+        ) {
+            viewModel.loadMoreTransactions()
+        }
     }
 }
