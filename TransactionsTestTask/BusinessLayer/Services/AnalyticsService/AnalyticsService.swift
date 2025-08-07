@@ -28,7 +28,7 @@ final class AnalyticsServiceImpl {
 }
 
 extension AnalyticsServiceImpl: AnalyticsService {
-    
+    // TODO: add known events list as enum with support of custom event
     func trackEvent(name: String, parameters: [String: String]) {
         let event = AnalyticsEvent(
             name: name,
