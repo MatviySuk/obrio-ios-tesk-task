@@ -4,21 +4,38 @@
 //
 //
 
-/// Services Assembler is used for Dependency Injection
-/// There is an example of a _bad_ services relationship built on `onRateUpdate` callback
-/// This kind of relationship must be refactored with a more convenient and reliable approach
-///
-/// It's ok to move the logging to model/viewModel/interactor/etc when you have 1-2 modules in your app
-/// Imagine having rate updates in 20-50 diffent modules
-/// Make this logic not depending on any module
+import Foundation
+import Combine
+
 final class ServicesAssembler {
     let bitcoinRateService: BitcoinRateService
     let analyticsService: AnalyticsService
     let coreDataService: CoreDataService
+    
+    private var cancellables = Set<AnyCancellable>()
 
     init() {
         self.analyticsService = AnalyticsServiceImpl()
         self.coreDataService = CoreDataServiceImpl()
-        self.bitcoinRateService = BitcoinRateServiceImpl(analyticsService: self.analyticsService)
+        self.bitcoinRateService = BitcoinRateServiceImpl()
+        
+        setupBitcoinRateLogging()
+
+        bitcoinRateService.start()
+    }
+    
+    private func setupBitcoinRateLogging() {
+        bitcoinRateService.ratePublisher
+            .sink(receiveValue: { [weak self] rateData in
+                guard let rateData = rateData else { return }
+                
+                Task {
+                    await self?.analyticsService.trackEvent(
+                        .bitcoinRateUpdate,
+                        parameters: ["rate": String(rateData.rate)]
+                    )
+                }
+            })
+            .store(in: &cancellables)
     }
 }

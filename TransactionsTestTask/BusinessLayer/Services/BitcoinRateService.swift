@@ -4,12 +4,6 @@
 //
 //
 
-/// Rate Service should fetch data from https://api.coindesk.com/v1/bpi/currentprice.json
-/// Fetching should be scheduled with dynamic update interval
-/// Rate should be cached for the offline mode
-/// Every successful fetch should be logged with analytics service
-/// The service should be covered by unit tests
-
 import Foundation
 import Combine
 
@@ -36,82 +30,102 @@ class UserDefaultsRateCache: BitcoinRateCacheService {
     }
 }
 
+// MARK: - Fetching Service Protocol
+protocol BitcoinRateFetching {
+    func fetchRate() async throws -> Double
+}
+
+class LiveBitcoinRateFetcher: BitcoinRateFetching {
+    private let urlSession: URLSession
+    private let decoder = JSONDecoder()
+    /// In production level software URL mustn't be forced. Instead it has to be parsed fron config and safely unwrapped.
+    private let url = URL(string: "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd")!
+
+    init(urlSession: URLSession = .shared) {
+        self.urlSession = urlSession
+    }
+
+    func fetchRate() async throws -> Double {
+        let (data, _) = try await urlSession.data(from: url)
+        let decodedData = try decoder.decode([String: PriceData].self, from: data)
+        guard let rate = decodedData["bitcoin"]?.usd else {
+            throw URLError(.cannotParseResponse)
+        }
+        return rate
+    }
+}
+
 
 // MARK: - Bitcoin Rate Service Protocol
 protocol BitcoinRateService: AnyObject {
-    var ratePublisher: AnyPublisher<BitcoinUSDRate?, Error> { get }
+    var ratePublisher: AnyPublisher<BitcoinUSDRate?, Never> { get }
+    func start()
+    func stop()
 }
 
 // MARK: - Implementation
 final class BitcoinRateServiceImpl: BitcoinRateService {
     
-    // MARK: - Public Properties
-    var ratePublisher: AnyPublisher<BitcoinUSDRate?, Error> {
+    var ratePublisher: AnyPublisher<BitcoinUSDRate?, Never> {
         rateSubject.eraseToAnyPublisher()
     }
     
-    // MARK: - Dependencies
-    private let analyticsService: AnalyticsService
     private let cacheService: BitcoinRateCacheService
-    private let urlSession: URLSession
-    private let decoder = JSONDecoder()
+    private let fetcher: BitcoinRateFetching
+    private let fetchInterval: TimeInterval
     
-    // MARK: - Private Properties
-    /// In production level software URL mustn't be forced. Instead it has to be parsed fron config and safely unwrapped.
-    private let url = URL(string: "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd")!
-    private let rateSubject: CurrentValueSubject<BitcoinUSDRate?, Error>
-    private var timerCancellable: AnyCancellable?
-    private var fetchCancellable: AnyCancellable?
-    
-    // MARK: - Init
+    private let rateSubject: CurrentValueSubject<BitcoinUSDRate?, Never>
+    private var fetchTask: Task<Void, Never>?
+
     init(
-        analyticsService: AnalyticsService,
         cacheService: BitcoinRateCacheService = UserDefaultsRateCache(),
-        fetchInterval: TimeInterval = 15.0,
-        urlSession: URLSession = .shared
+        fetchInterval: TimeInterval = 5.0,
+        fetcher: BitcoinRateFetching = LiveBitcoinRateFetcher()
     ) {
-        self.analyticsService = analyticsService
         self.cacheService = cacheService
-        self.urlSession = urlSession
+        self.fetchInterval = fetchInterval
+        self.fetcher = fetcher
         
         self.rateSubject = CurrentValueSubject(cacheService.getBitcoinUSDRate())
-        
-        fetchRate()
-        
-        timerCancellable = Timer.publish(every: fetchInterval, on: .main, in: .common)
-            .autoconnect()
-            .sink { [weak self] _ in
-                self?.fetchRate()
-            }
     }
     
-    // MARK: - Private Fetch Logic
-    private func fetchRate() {
-        fetchCancellable = urlSession.dataTaskPublisher(for: url)
-            .map(\.data)
-            .decode(type: [String: PriceData].self, decoder: decoder)
-            .compactMap { $0["bitcoin"]?.usd }
-            .sink(receiveCompletion: { [weak self] completion in
-                if case .failure(let error) = completion {
-                    self?.analyticsService.trackEvent(
-                        name: "BitcoinRateFetchFailed",
-                        parameters: ["error": error.localizedDescription]
-                    )
-                    
-                    print("Fetch failed: \(error.localizedDescription). Holding last known value.")
-                }
-            }, receiveValue: { [weak self] rate in
-                self?.handleSuccessfulFetch(rate: rate)
-            })
+    deinit {
+        stop()
+    }
+    
+    func start() {
+        guard fetchTask == nil else { return }
+        
+        fetchTask = Task {
+            while !Task.isCancelled {
+                await fetchRate()
+                try? await Task.sleep(nanoseconds: UInt64(fetchInterval * 1_000_000_000))
+            }
+        }
+    }
+    
+    func stop() {
+        fetchTask?.cancel()
+        fetchTask = nil
+    }
+    
+    private func fetchRate() async {
+        do {
+            let rate = try await fetcher.fetchRate()
+            handleSuccessfulFetch(rate: rate)
+        } catch {
+            handleFailedFetch(error: error)
+        }
     }
     
     private func handleSuccessfulFetch(rate: Double) {
-        analyticsService.trackEvent(name: "BitcoinRateUpdate", parameters: ["rate": String(rate)])
-        
         let newRate = BitcoinUSDRate(rate: rate, timestamp: .now)
         cacheService.cache(rate: newRate)
-        
         rateSubject.send(newRate)
+    }
+    
+    private func handleFailedFetch(error: Error) {
+        print("Bitcoin rate fetch failed: \(error.localizedDescription). Holding last known value.")
     }
 }
 

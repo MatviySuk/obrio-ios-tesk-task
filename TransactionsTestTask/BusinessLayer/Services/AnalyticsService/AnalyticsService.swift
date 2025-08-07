@@ -6,36 +6,70 @@
 
 import Foundation
 
-/// Analytics Service is used for events logging
-/// The list of reasonable events is up to you
-/// It should be possible not only to track events but to get it from the service
-/// The minimal needed filters are: event name and date range
-/// The service should be covered by unit tests
-protocol AnalyticsService: AnyObject {
+// MARK: - Analytics Service
+public protocol AnalyticsService: AnyObject {
+    func trackEvent(_ eventName: EventName, parameters: [String: String]) async
     
-    func trackEvent(name: String, parameters: [String: String])
+    func getEvents(
+        named eventNames: Set<EventName>?,
+        in dateRange: DateInterval?
+    ) async -> [AnalyticsEvent]
 }
 
-final class AnalyticsServiceImpl {
+public enum EventName: Equatable, Hashable {
+    case bitcoinRateUpdate
+    case bitcoinRateFetchFailed
+    case transactionAdded
+    case custom(String)
     
-    private var events: [AnalyticsEvent] = []
-    
-    // MARK: - Init
-    
-    init() {
-        
+    var stringValue: String {
+        switch self {
+        case .bitcoinRateUpdate:
+            return "bitcoin_rate_update"
+        case .bitcoinRateFetchFailed:
+            return "bitcoin_rate_fetch_failed"
+        case .transactionAdded:
+            return "transaction_added"
+        case .custom(let name):
+            return name
+        }
     }
 }
 
-extension AnalyticsServiceImpl: AnalyticsService {
-    // TODO: add known events list as enum with support of custom event
-    func trackEvent(name: String, parameters: [String: String]) {
+public final actor AnalyticsServiceImpl: AnalyticsService {
+    
+    private var events: [AnalyticsEvent] = []
+
+    public init() {}
+    
+    public func trackEvent(_ eventName: EventName, parameters: [String: String]) {
         let event = AnalyticsEvent(
-            name: name,
+            name: eventName.stringValue,
             parameters: parameters,
             date: .now
         )
         
         events.append(event)
+#if DEBUG
+        print("Analytics: Logged event '\(event.name)' with parameters: \(event.parameters)")
+#endif
+    }
+    
+    public func getEvents(
+        named eventNames: Set<EventName>?,
+        in dateRange: DateInterval?
+    ) -> [AnalyticsEvent] {
+        var filteredEvents = self.events
+        
+        if let eventNames = eventNames, !eventNames.isEmpty {
+            let stringEventNames = Set(eventNames.map { $0.stringValue })
+            filteredEvents = filteredEvents.filter { stringEventNames.contains($0.name) }
+        }
+        
+        if let dateRange = dateRange {
+            filteredEvents = filteredEvents.filter { dateRange.contains($0.date) }
+        }
+        
+        return filteredEvents
     }
 }
